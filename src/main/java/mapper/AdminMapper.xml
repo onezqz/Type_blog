@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="mapper.AdminMapper">
+    <!--登录-->
+    <select id="login" parameterType="user" resultType="int">
+        SELECT count(*)
+        FROM users
+        WHERE name = #{name} AND password = #{password}
+    </select>
+
+    <!--通过category查找Meta-->
+    <select id="findMetaByCategory" parameterType="java.lang.String" resultType="meta">
+        SELECT *
+        FROM metas
+        WHERE name = #{category} AND type = "category"
+    </select>
+
+    <!--通过tag获得Meta-->
+    <select id="findMetaByTags" parameterType="java.lang.String" resultType="meta">
+        SELECT *
+        FROM metas
+        WHERE name = #{tag} AND type = "tag"
+    </select>
+
+    <!--获得文章列表 只要分类的meta-->
+    <select id="getArticleList" resultType="content">
+        SELECT *
+        FROM contents
+        WHERE type = "article"
+        ORDER BY contents.modified DESC
+        LIMIT #{idx},#{currentCount}
+    </select>
+
+    <!--发表页面-->
+    <select id="insertPage" parameterType="content">
+        INSERT INTO contents VALUES (NULL, #{title}, #{slug}, #{created}, #{modified}, #{text}, #{order},
+                                           #{authorId}, #{template}, #{type}, #{status}, #{password}, #{commentsNum},
+                                     #{allowComment}, #{allowPing},
+                                     #{allowFeed}, #{parent})
+    </select>
+    <!--获得pageList-->
+    <select id="getPageList" resultType="content">
+        SELECT *
+        FROM contents
+        WHERE type = "page"
+    </select>
+
+    <!--根据cid获得content-->
+    <select id="getContentByCid" parameterType="java.lang.String" resultType="content">
+        SELECT *
+        FROM contents
+        WHERE contents.cid = #{cid}
+    </select>
+
+    <!--根据cid获得page-->
+    <select id="getPageByCid" parameterType="java.lang.String" resultType="content">
+        SELECT *
+        FROM contents
+        WHERE cid = #{cid}
+    </select>
+
+    <!--获得分类列表-->
+    <select id="getMetaList" parameterType="java.lang.String" resultType="meta">
+        SELECT *
+        FROM metas
+        WHERE type = #{type}
+    </select>
+    <!--根据cid获得meta-->
+    <select id="getMetaByCid" parameterType="int" resultType="meta">
+        SELECT metas.*
+        FROM relationships, metas
+        WHERE relationships.mid = metas.mid AND relationships.cid = #{cid}
+    </select>
+    <!--通过mid获得meta-->
+    <select id="getMetaByMid" parameterType="java.lang.String" resultType="meta">
+        SELECT *
+        FROM metas
+        WHERE mid = #{mid}
+    </select>
+
+    <!--获得全部评论列表-->
+    <select id="getAllCommentList" resultMap="contentAndCommentId">
+        SELECT *
+        FROM comments, contents
+        WHERE comments.cid = contents.cid
+        ORDER BY comments.created DESC
+        LIMIT #{idx},#{currentCount}
+    </select>
+
+    <!--根据cid获得评论列表-->
+    <select id="getCommentListByCid" resultMap="contentAndCommentId">
+        SELECT *
+        FROM comments, contents
+        WHERE comments.cid = contents.cid AND comments.cid = #{cid}
+        ORDER BY comments.created DESC
+        LIMIT #{idx},#{currentCount}
+    </select>
+
+    <!--获得文章 页面的数量-->
+    <select id="countContent" parameterType="java.lang.String" resultType="int">
+        SELECT count(*)
+        FROM contents
+        WHERE type = #{type}
+    </select>
+
+    <!--获得分类 标签数-->
+    <select id="countMeta" parameterType="java.lang.String" resultType="int">
+        SELECT count(*)
+        FROM metas
+        WHERE type = #{type}
+    </select>
+
+    <!--获得评论数-->
+    <select id="countComment" resultType="int">
+        SELECT count(*)
+        FROM comments
+    </select>
+    <!--通过cid获得评论总数-->
+    <select id="countCommentByCid" parameterType="java.lang.String" resultType="int">
+        SELECT count(*)
+        FROM comments
+        where comments.cid=#{cid}
+    </select>
+
+    <!--获得前10条最新的文章  前3条页面-->
+    <select id="getContentListByOrder" resultType="content">
+        SELECT
+            contents.cid,
+            contents.created,
+            contents.title
+        FROM contents
+        WHERE type = #{type}
+        ORDER BY created DESC
+        LIMIT 0, #{num}
+    </select>
+    <!--获得最近评论-->
+    <select id="getCommentListByOrder" parameterType="int" resultType="comment">
+        SELECT
+            comments.coid,
+            comments.url,
+            comments.author,
+            comments.created,
+            comments.text
+        FROM comments
+        ORDER BY created DESC
+        LIMIT 0, #{num}
+    </select>
+    <!--根据coid 获得评论-->
+    <select id="editJson" parameterType="java.lang.String" resultType="comment">
+        SELECT *
+        FROM comments
+        WHERE coid = #{coid}
+    </select>
+
+    <select id="getBlogConfig" resultType="blogConfigPojo">
+        SELECT *
+        FROM blogconfig
+    </select>
+    <!--获得用户信息-->
+    <select id="getUser" resultType="user">
+        SELECT * FROM users
+    </select>
+
+    <!--插入文章-->
+    <insert id="insertArticle" parameterType="content">
+        insert into contents values(null,#{title},#{slug},#{created},#{modified},#{text},#{order},
+        #{authorId},#{template},#{type},#{status},#{password},#{commentsNum},#{allowComment},#{allowPing},
+        #{allowFeed},#{parent})
+        <selectKey keyProperty="cid" order="AFTER" resultType="java.lang.Integer">
+            SELECT LAST_INSERT_ID() as cid
+        </selectKey>
+    </insert>
+
+    <!--插入meta-->
+    <insert id="insertMetaByType" parameterType="meta">
+        insert into metas values (null,#{name},#{slug},#{type},null,1,null,null)
+        <selectKey keyProperty="mid" resultType="int" order="AFTER">
+            SELECT LAST_INSERT_ID() as mid
+        </selectKey>
+    </insert>
+
+    <!--更新relationship表-->
+    <insert id="insertRelationShop">
+        INSERT INTO relationships VALUES (#{cid}, #{mid});
+    </insert>
+    <!--添加分类-->
+    <insert id="insertMeta" parameterType="meta">
+        INSERT INTO metas VALUES (NULL, #{name}, #{slug}, #{type}, #{description}, #{count}, #{order}, #{parent});
+    </insert>
+    <!--回复评论-->
+    <insert id="commentReply" parameterType="comment">
+        INSERT INTO comments (coid, cid, created, author, mail, url, ip, text, parent)
+        VALUES (NULL, #{cid}, #{created}, #{author}, #{mail}, #{url}, #{ip}, #{text}, #{parent})
+    </insert>
+
+    <!--更新meta-->
+    <update id="updateMetaCountByMid" parameterType="int">
+        UPDATE metas
+        SET count = count + 1
+        WHERE mid = #{mid}
+    </update>
+    <!--更新meta count-1-->
+    <update id="updateMetaSubCountByMid" parameterType="int">
+        UPDATE metas
+        SET count = count - 1
+        WHERE mid = #{mid}
+    </update>
+
+    <!--通过cid更新Content-->
+    <update id="updateContentByCid" parameterType="content">
+        UPDATE contents
+        SET title          = #{title}, slug = #{slug}, created = #{created}, modified = #{modified}, text = #{text},
+            contents.order = #{order}, type = #{type}, status = #{status}, password = #{password},
+            commentsNum    = #{commentsNum},
+            allowComment   = #{allowComment}, allowPing = #{allowPing}, allowFeed = #{allowFeed}, parent = #{parent}
+        WHERE cid = #{cid}
+    </update>
+
+    <!--通过mid更新meta信息-->
+    <update id="updateMetaInfoByMid" parameterType="meta">
+        UPDATE metas
+        SET name = #{name}, slug = #{slug}, type = #{type}, description = #{description}
+        WHERE mid = #{mid}
+    </update>
+
+    <!--更新文章的状态-->
+    <update id="updateContentStatus">
+        UPDATE contents
+        SET contents.status = #{status}
+        WHERE cid = #{cid}
+    </update>
+    <!--通过coid 修改评论的状态-->
+    <update id="editCommentStatus" parameterType="comment">
+        UPDATE comments
+        SET comments.status = #{status}
+        WHERE coid = #{coid}
+    </update>
+    <!--更新评论-->
+    <update id="updateComment" parameterType="comment">
+        UPDATE comments
+        SET comments.author = #{author}, comments.mail = #{mail}, comments.url = #{url}, comments.text = #{text}
+        WHERE coid = #{coid}
+    </update>
+    <!--更新博客设置-->
+    <update id="updateBlog" parameterType="blogConfigPojo" keyColumn="int">
+        UPDATE blogconfig set blogName=#{blogName},blogKeywords=#{blogKeywords},blogDesc=#{blogDesc},
+            blogCommentTimeFormat=#{blogCommentTimeFormat},blogCommentListNum=#{blogCommentListNum},
+            blogCommentAvatarUrl=#{blogCommentAvatarUrl},blogArticleTimeFormat=#{blogArticleTimeFormat},
+            blogArticleNumEachPage=#{blogArticleNumEachPage},blogArticleSub=#{blogArticleSub}
+        WHERE bid=#{bid}
+    </update>
+    <!--更新用户信息-->
+    <update id="updateUser" parameterType="user" keyColumn="int">
+        update users
+        set users.name=#{name},users.password=#{password},users.mail=#{mail},users.url=#{url}
+        where users.uid=#{uid}
+    </update>
+    <!--根据coid将contents评论数减1-->
+    <update id="subCommentsNum" parameterType="java.lang.String">
+        UPDATE contents
+        set contents.commentsNum=commentsNum-1
+        where contents.cid=#{cid}
+    </update>
+    <!--根据cid评论数加1-->
+    <update id="countCommentNum" parameterType="int">
+        UPDATE contents
+        set contents.commentsNum=commentsNum+1
+        where contents.cid=#{cid}
+    </update>
+
+    <!--删除relationship记录-->
+    <delete id="deleteRelationShop">
+        DELETE FROM relationships
+        WHERE cid = #{cid} AND mid = #{mid}
+    </delete>
+    <!--根据mid删除记录-->
+    <delete id="deleteRelationShopByMid" parameterType="java.lang.String">
+        DELETE FROM relationships
+        WHERE mid = #{mid}
+    </delete>
+    <!--删除文章-->
+    <delete id="deleteContent" parameterType="java.lang.String">
+        DELETE FROM contents
+        WHERE cid = #{cid}
+    </delete>
+
+    <!--根据cid删除评论-->
+    <delete id="deleteComment" parameterType="java.lang.String">
+        DELETE FROM comments
+        WHERE cid = #{cid}
+    </delete>
+
+    <!--删除分类-->
+    <delete id="deleteCategory" parameterType="java.lang.String">
+        DELETE FROM metas
+        WHERE mid = #{mid}
+    </delete>
+
+    <!--通过coid删除评论-->
+    <delete id="commentDelete" parameterType="java.lang.String">
+        DELETE FROM comments
+        WHERE coid = #{coid}
+    </delete>
+
+
+
+    <!--定义文章和评论一对一的关系ResultMap-->
+    <resultMap id="contentAndCommentId" type="comment">
+        <id column="coid" property="coid"/>
+        <result column="cid" property="cid"/>
+        <result column="created" property="created"/>
+        <result column="author" property="author"/>
+        <result column="authorId" property="authorId"/>
+        <result column="ownerId" property="ownerId"/>
+        <result column="mail" property="mail"/>
+        <result column="url" property="url"/>
+        <result column="ip" property="ip"/>
+        <result column="agent" property="agent"/>
+        <result column="text" property="text"/>
+        <result column="type" property="type"/>
+        <result column="status" property="status"/>
+        <result column="parent" property="parent"/>
+        <association property="content" javaType="content">
+            <id column="cid" property="cid"/>
+            <result column="title" property="title"/>
+            <result column="slug" property="slug"/>
+        </association>
+    </resultMap>
+
+
+    <!--定义文章和分类的关系ResultMap-->
+    <resultMap id="contentAndCategoryId" type="content">
+        <id column="cid" property="cid"/>
+        <result column="title" property="title"/>
+        <result column="slug" property="slug"/>
+        <result column="created" property="created"/>
+        <result column="modified" property="modified"/>
+        <result column="text" property="text"/>
+        <result column="order" property="order"/>
+        <result column="authorId" property="authorId"/>
+        <result column="template" property="template"/>
+        <result column="type" property="type"/>
+        <result column="status" property="status"/>
+        <result column="password" property="password"/>
+        <result column="commentsNum" property="commentsNum"/>
+        <result column="allowComment" property="allowComment"/>
+        <result column="allowPing" property="allowPing"/>
+        <result column="allowFeed" property="allowFeed"/>
+        <result column="parent" property="parent"/>
+        <collection property="metaList" javaType="meta">
+            <id column="mid" property="mid"/>
+            <result column="name" property="name"/>
+            <result column="count" property="count"/>
+            <result column="metaType" property="type"/>
+        </collection>
+    </resultMap>
+
+</mapper>

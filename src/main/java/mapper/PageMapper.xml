@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="mapper.PageMapper">
+    <!--获得categoryList-->
+    <select id="getCategoryList" parameterType="java.lang.String" resultType="meta">
+        SELECT
+            metas.mid,
+            metas.name
+        FROM metas
+        WHERE type = #{type}
+    </select>
+
+    <!--获得pageList-->
+    <select id="getPageList" parameterType="java.lang.String" resultType="content">
+        SELECT
+            contents.cid,
+            contents.title,
+            contents.status
+        FROM contents
+        WHERE type = #{type} AND contents.status = "publish"
+    </select>
+
+    <!--文章总数-->
+    <select id="getContentTotal" resultType="int">
+        SELECT count(*)
+        FROM contents
+        WHERE type = "article" AND contents.status = "publish"
+    </select>
+
+    <!--根据cid获得文章总数-->
+    <select id="getContentTotalByMid" parameterType="java.lang.String" resultType="int">
+        SELECT count(*)
+        FROM relationships
+        WHERE relationships.mid = #{mid}
+    </select>
+
+    <!--获得每页的文章-->
+    <select id="getContentListForPage" resultType="content">
+        SELECT *
+        FROM contents
+        WHERE type = "article" AND contents.status = "publish"
+        ORDER BY contents.modified DESC
+        LIMIT #{idx}, #{currentCount}
+    </select>
+
+    <!--根据时间排序获得cid-->
+    <select id="getCidList" resultType="int">
+        SELECT contents.cid
+        FROM contents
+        WHERE type = "article" AND contents.status = "publish"
+        ORDER BY contents.modified DESC
+    </select>
+
+    <!--获得某一类的一页文章-->
+    <select id="getContentListForPageByMid" resultType="content">
+        SELECT *
+        FROM contents, relationships
+        WHERE contents.type = "article" AND contents.status = "publish"
+              AND contents.cid = relationships.cid AND relationships.mid = #{mid}
+        ORDER BY contents.modified DESC
+        LIMIT #{idx}, #{currentCountForCat}
+    </select>
+
+    <!--根据cid获得文章的内容，分类，标签，评论-->
+    <select id="getArticleInfo" parameterType="java.lang.String" resultMap="articleInfoId">
+        SELECT
+            contents.*,
+            metas.mid,
+            metas.name,
+            metas.type metaType
+        FROM contents, relationships, metas
+        WHERE
+            contents.cid = relationships.cid
+            AND relationships.mid = metas.mid
+            AND contents.cid = #{cid}
+    </select>
+
+    <!--根据cid获得评论-->
+    <select id="getCommentListByCid" parameterType="java.lang.String" resultType="comment">
+        SELECT *
+        FROM comments
+        WHERE cid = #{cid} AND status = "approved"
+    </select>
+
+    <!--通过cid获得页面-->
+    <select id="getPageByCid" parameterType="java.lang.String" resultType="content">
+        SELECT *
+        FROM contents
+        WHERE cid = #{cid}
+    </select>
+    <!--通过cid获得文章-->
+    <select id="getArticleByCid" parameterType="java.lang.String" resultType="content">
+        SELECT *
+        FROM contents
+        WHERE cid = #{cid}
+    </select>
+    <!--获得博客的基本配置-->
+    <select id="getBlogConfig" resultType="blogConfigPojo">
+        SELECT * from blogconfig
+    </select>
+
+    <!--提交评论-->
+    <insert id="submitComment" parameterType="comment">
+        INSERT INTO comments (coid, cid, created, author, mail, url, text, parent,ip)
+        VALUES (NULL, #{cid}, #{created}, #{author}, #{mail}, #{url}, #{text}, #{parent},#{ip})
+    </insert>
+
+    <!--根据cid将评论数加1-->
+    <update id="countCommentNum" parameterType="int">
+        UPDATE contents
+        SET commentsNum=commentsNum+1
+        WHERE cid=#{cid}
+    </update>
+
+    <!--定义文章详情页resultMap-->
+    <resultMap id="articleInfoId" type="content">
+        <id column="cid" property="cid"/>
+        <result column="title" property="title"/>
+        <result column="slug" property="slug"/>
+        <result column="created" property="created"/>
+        <result column="modified" property="modified"/>
+        <result column="text" property="text"/>
+        <result column="order" property="order"/>
+        <result column="authorId" property="authorId"/>
+        <result column="template" property="template"/>
+        <result column="type" property="type"/>
+        <result column="status" property="status"/>
+        <result column="password" property="password"/>
+        <result column="commentsNum" property="commentsNum"/>
+        <result column="allowComment" property="allowComment"/>
+        <result column="allowPing" property="allowPing"/>
+        <result column="allowFeed" property="allowFeed"/>
+        <result column="parent" property="parent"/>
+        <collection property="metaList" javaType="meta">
+            <id column="mid" property="mid"/>
+            <result column="name" property="name"/>
+            <result column="metaType" property="type"/>
+        </collection>
+    </resultMap>
+</mapper>
