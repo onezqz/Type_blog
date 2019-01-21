@@ -124,9 +124,8 @@
             dataType:"JSON",
             success:function (status) {
                 if(status===1){
-                    if(alert("修改成功")){
-                        window.location.href="${pageContext.request.contextPath}/admin/blog-setting-jsp";
-                    }
+                    alert("修改成功");
+                    window.location.href="${pageContext.request.contextPath}/admin/blog-setting-jsp";
                 }else{
                     alert("修改失败，请重新修改")
                 }

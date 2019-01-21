@@ -2,7 +2,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <html>
-<head>s
+<head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>文章列表</title>
 </head>
